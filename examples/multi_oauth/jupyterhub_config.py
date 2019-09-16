@@ -2,6 +2,17 @@ import os
 import warnings
 import pdb
 
+from oauthenticator.github import GitHubOAuthenticator, GitHubLoginHandler
+from oauthenticator.oauth2 import OAuthCallbackHandler
+from oauthenticator.google import GoogleOAuthenticator, GoogleOAuthHandler, GoogleLoginHandler
+from oauthenticator.hydroshare import HydroShareOAuthenticator,  HydroShareLoginHandler, HydroShareCallbackHandler
+
+class GitHubCallbackHandler(OAuthCallbackHandler):
+    pass
+
+class GitHubOAuthenticator_New(GitHubOAuthenticator):
+    callback_handler = GitHubCallbackHandler
+
 # launch with docker
 c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 
@@ -24,7 +35,7 @@ c.DockerSpawner.remove = True
 
 c.Application.log_level = 'DEBUG'
 
-c.JupyterHub.authenticator_class = 'oauthenticator.multiauthenticator.MultiAuthenticator'
+c.JupyterHub.authenticator_class = 'oauthenticator.multiauthenticator.MultiOAuthenticator'
 
 c.GitHubOAuthenticator_New.oauth_callback_url = "http://me.domain.com:8000/hub/github/callback"
 c.GitHubOAuthenticator_New.client_id = "xxx"
@@ -43,26 +54,14 @@ c.Authenticator.admin_users = {'hydroshare_user1'}
 
 c.JupyterHub.template_paths = ['/srv/jupyterhub']
 
-from oauthenticator.github import GitHubOAuthenticator, GitHubLoginHandler
-from oauthenticator.oauth2 import OAuthCallbackHandler
-from oauthenticator.google import GoogleOAuthenticator, GoogleOAuthHandler, GoogleLoginHandler
-from oauthenticator.hydroshare import HydroShareOAuthenticator,  HydroShareLoginHandler, HydroShareCallbackHandler
-
-class GitHubCallbackHandler(OAuthCallbackHandler):
-    pass
-
-class GitHubOAuthenticator_New(GitHubOAuthenticator):
-    callback_handler = GitHubCallbackHandler
-
-c.MultiAuthenticator._auth_member_set = set([
+c.MultiOAuthenticator._auth_member_set = set([
     tuple([GitHubOAuthenticator_New, GitHubLoginHandler, GitHubCallbackHandler]),
     tuple([GoogleOAuthenticator, GoogleLoginHandler, GoogleOAuthHandler]),
     tuple([HydroShareOAuthenticator, HydroShareLoginHandler, HydroShareCallbackHandler]),
    ])
 
-
 ## enable authentication state
-c.MultiAuthenticator.enable_auth_state = True
+c.MultiOAuthenticator.enable_auth_state = True
 if 'JUPYTERHUB_CRYPT_KEY' not in os.environ:
     warnings.warn(
         "Need JUPYTERHUB_CRYPT_KEY env for persistent auth_state.\n"
