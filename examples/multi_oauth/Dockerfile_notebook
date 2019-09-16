@@ -1,0 +1,16 @@
+# docker build -f Dockerfile_notebook -t zhiyuli/notebook .
+
+FROM jupyter/datascience-notebook
+USER root
+
+RUN pip install hs_restclient && \
+    rm -rf /tmp/nbfetch && \
+    git clone --branch cybergis https://github.com/zhiyuli/nbfetch.git /tmp/nbfetch && \
+    cd /tmp/nbfetch && \
+    python setup.py install && \
+    cd /tmp && \
+    rm -rf /tmp/nbfetch && \
+    jupyter serverextension enable --py nbfetch --sys-prefix
+
+USER jovyan
+

@@ -1,0 +1,2 @@
+dockerspawner
+git+https://github.com/zhiyuli/oauthenticator.git@hydroshare
