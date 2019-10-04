@@ -51,9 +51,11 @@ GoogleOAuthenticator.callback_handler is GoogleLoginHandler
 However, the official GitHubOAuthenticator only meets (1) and (2), not (3) or (4), which can be fixed by subclassing the originals
 
 class GitHubCallbackHandler(OAuthCallbackHandler):
+
     pass
 
 class GitHubOAuthenticator_New(GitHubOAuthenticator):
+
     callback_handler = GitHubCallbackHandler
 
 Now the we have a new GitHubOAuthenticator_New, whose .login_handler and .callback_handler are both unique
@@ -65,18 +67,27 @@ The reason is our codes needs to use instance of .login_handler and .callback_ha
 c.JupyterHub.authenticator_class = 'oauthenticator.multiauthenticator.MultiOAuthenticator'
 
 c.GitHubOAuthenticator_New.oauth_callback_url = "http://me.domain.com:8000/hub/github/callback"
+
 c.GitHubOAuthenticator_New.client_id = "xxx"
+
 c.GitHubOAuthenticator_New.client_secret = "xxx"
 
 c.GoogleOAuthenticator.oauth_callback_url = "http://me.domain.com:8000/hub/google/callback"
+
 c.GoogleOAuthenticator.client_id = "xxxxx"
+
 c.GoogleOAuthenticator.client_secret = "xxxx"
 
 c.MultiOAuthenticator._auth_member_set = set([
+    
     tuple([GitHubOAuthenticator_New, GitHubLoginHandler, GitHubCallbackHandler]),
+    
     tuple([GoogleOAuthenticator, GoogleLoginHandler, GoogleOAuthHandler]),
+    
     ##tuple([OtherOAuthenticator, OtherLoginHandler, OtherOAuthHandler]),
+    
     ##tuple([AnotherOAuthenticator, AnotherLoginHandler, AnotherOAuthHandler]),
+   
    ])
    
 Also, you need to use this modified login.html
