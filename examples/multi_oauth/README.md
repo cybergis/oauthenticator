@@ -92,7 +92,7 @@ c.MultiOAuthenticator._auth_member_set = set([
 
 You may argue that just specifying the XXXXXXOAuthenticator class would be enough as it already references the other two classes in .login_handler and .callback_handler.
 
-Yes that is right and our implementation could have been coded in that way. But we chose to let users explicitly list all the 3 classes in configurations to make sure they are are all unique
+Yes that is right and our implementation could have been coded in that way. But we chose to let users explicitly list all the 3 classes in configurations to visually make sure they are all unique
    
 Also, you need to use this modified login.html template:
 
