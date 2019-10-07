@@ -16,7 +16,6 @@ from jupyterhub.handlers.login import LoginHandler, LogoutHandler
 from oauthenticator.google import GoogleOAuthenticator, GoogleLoginHandler, GoogleOAuthHandler
 from oauthenticator.oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
-import pdb
 
 class MultiLoginHandler(LoginHandler):
 
@@ -57,6 +56,8 @@ class MultiLoginHandler(LoginHandler):
         else:
             self.finish(self._render())
 
+    # legacy codes from https://gist.github.com/danizen/78111676530738fcbca8d8ad87c56690
+    # not being used if any OAuthenticator is configured with this MultiOAuthenticator
     @gen.coroutine
     def post(self):
         """

@@ -89,8 +89,12 @@ c.MultiOAuthenticator._auth_member_set = set([
     ##tuple([AnotherOAuthenticator, AnotherLoginHandler, AnotherOAuthHandler]),
    
    ])
+
+You may argue that just specifying the XXXXXXOAuthenticator class would be enough as it already references the other two classes.
+
+Yes that is right and could be coded ih that way. But we chose to let users explicitly list all the 3 classes to make sure they are all unique
    
-Also, you need to use this modified login.html
+Also, you need to use this modified login.html template:
 
 c.JupyterHub.template_paths = ['/YOUR/FOLDER/HAS/LOGIN.HTML']
 
