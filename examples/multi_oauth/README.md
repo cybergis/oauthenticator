@@ -28,7 +28,7 @@ CILogon
 
 ## Basic idea
 
-This work was inspired by danizen's implementation (a hard-coded authenticator for Google, GitHub and NIH login)
+This work was inspired by danizen's implementation (a hard-coded multi-authenticator for Google, GitHub and NIH login)
 
 See: https://gist.github.com/danizen/78111676530738fcbca8d8ad87c56690
 
@@ -40,7 +40,7 @@ We extended it to work with any XXXXXOAuthenticator if it meets the following re
 
 3)  XXXXXOAuthenticator.callback_handler is a subclass (or 'deeper' subclass) of OAuthCallbackHandler
 
-4)  The above 3 classes should be unique for each XXXXXOAuthenticator
+4)  The above 3 classes should be unique for each OAuth provider (google, github, XXXXX .....)
 
 For example, the official GoogleOAuthenticator meets all the 4 requirements:
 
@@ -60,9 +60,9 @@ class GitHubOAuthenticator_New(GitHubOAuthenticator):
 
 Now the we have a new GitHubOAuthenticator_New, whose .login_handler and .callback_handler are both unique
 
-The reason is our codes needs to use instance of .login_handler and .callback_handler to find the associated XXXXXOAuthenticator class
+The reason is our code needs to use the instances of .login_handler and .callback_handler to find the associated XXXXXOAuthenticator class
 
-## Configure multiauthenticator in  jupyter_config.py:
+## Configure multioauthenticator in  jupyter_config.py:
 
 c.JupyterHub.authenticator_class = 'oauthenticator.multiauthenticator.MultiOAuthenticator'
 
@@ -90,9 +90,9 @@ c.MultiOAuthenticator._auth_member_set = set([
    
    ])
 
-You may argue that just specifying the XXXXXXOAuthenticator class would be enough as it already references the other two classes.
+You may argue that just specifying the XXXXXXOAuthenticator class would be enough as it already references the other two classes in .login_handler and .callback_handler.
 
-Yes that is right and could be coded ih that way. But we chose to let users explicitly list all the 3 classes to make sure they are all unique
+Yes that is right and our implementation could have been coded in that way. But we chose to let users explicitly list all the 3 classes in configurations to make sure they are are all unique
    
 Also, you need to use this modified login.html template:
 
