@@ -47,7 +47,10 @@ class MultiLoginHandler(LoginHandler):
         Simplify rendering as there is no username
         """
         self.statsd.incr('login.request')
-        user = self.get_current_user()
+        if hasattr(self, 'current_user'):
+            user = self.current_user
+        else:
+            user = self.get_current_user()
         if user:
             # set new login cookie
             # because single-user cookie may have been cleared or incorrect
