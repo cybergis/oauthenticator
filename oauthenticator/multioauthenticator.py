@@ -12,6 +12,7 @@ from traitlets import (
 
 from jupyterhub.auth import Authenticator
 from jupyterhub.handlers.login import LoginHandler, LogoutHandler
+from jupyterhub.user import User
 
 from oauthenticator.google import GoogleOAuthenticator, GoogleLoginHandler, GoogleOAuthHandler
 from oauthenticator.oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
@@ -47,8 +48,11 @@ class MultiLoginHandler(LoginHandler):
         Simplify rendering as there is no username
         """
         self.statsd.incr('login.request')
-        user = self.get_current_user()
-        if user:
+        if hasattr(self, 'current_user'):
+            user = self.current_user
+        else:
+            user = self.get_current_user()
+        if isinstance(user, User):
             # set new login cookie
             # because single-user cookie may have been cleared or incorrect
             self.set_login_cookie(self.get_current_user())
@@ -94,6 +98,19 @@ class MultiOAuthenticator(Authenticator):
     @gen.coroutine
     def pre_spawn_start(self, user, spawner):
         subauth_name = self.__subauth_name
+        if subauth_name is None:
+            # 2019110 A temporary fix for redirect loop and 500 error
+            # see: https://github.com/jupyterhub/jupyterhub/blob/66f29e0f5ab21683fe63186336ae3a6fcf2f5bda/jupyterhub/user.py#L539
+            # see: https://github.com/jupyterhub/jupyterhub/issues/2683
+            # This is not a Hub bug. Instead, it is a multioauthenticator bug and design issue.
+            # If hub server restarts and user opens a browser that still has valid cookies for a already logged in user.
+            # In this case Hub will skip authentication process,
+            # instead it retrieves saved User object from DB and does spawning with it.
+            # the subauth_name here is None because Hub restarted and it only gets saved/cached in memory during a full multioauthentication process
+            # Return this function here means No authenticator.pre_spawn_start() will be executed any more
+            # A workaround: use spawner.run_pre_spawn_hook()
+            # see: https://github.com/jupyterhub/jupyterhub/blob/66f29e0f5ab21683fe63186336ae3a6fcf2f5bda/jupyterhub/user.py#L551
+            return
         for auth_tuple in self._auth_member_set:
             auth_class = auth_tuple[0]
             auth_obj = auth_class(config=self.config)
