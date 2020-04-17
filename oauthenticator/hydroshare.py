@@ -22,7 +22,12 @@ class HydroShareCallbackHandler(OAuthCallbackHandler):
     pass
 
 class HydroShareLoginHandler(GenericLoginHandler):
-    _OAUTH_AUTHORIZE_URL = '{0}/o/authorize/'.format(auth_server_full_url)
+    #_OAUTH_AUTHORIZE_URL = '{0}/o/authorize/'.format(auth_server_full_url)
+
+    # authenticate against CyberGIS-Jupyter for Water Group in HydroShare
+    # see https://docs.google.com/document/d/1M3QivDtVFSRCW47EpbzeIcghVp-n0pKC9IBWsOyVyhk/edit#
+    # Group on HydroShare: https://www.hydroshare.org/group/157
+    _OAUTH_AUTHORIZE_URL = '{0}/o/groupauthorize/157/'.format(auth_server_full_url)
     pass
 
 class HydroShareOAuthenticator(GenericOAuthenticator):
