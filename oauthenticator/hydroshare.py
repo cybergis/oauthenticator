@@ -19,7 +19,21 @@ auth_server_full_url = "{0}://{1}".format(http_scheme, auth_server_hostname)
 
 
 class HydroShareCallbackHandler(OAuthCallbackHandler):
-    pass
+    
+    def get_next_url(self, user=None):
+        url = super().get_next_url(user=user)
+        if user is not None:
+            url_new = url.replace('{_HS_USR_NAME_}', user.name)
+            if url != url_new:
+                self.log.info("HydroShareCallbackHandler dynamically modifies next_url \n"
+                               "user.name: {} \n"
+                               "user.escaped_name: {} \n"
+                               "Original next_url {} \n"
+                               "New next_url {}".format(user.name, user.escaped_name, url, url_new)
+                               )
+                url = url_new
+        return url
+    
 
 class HydroShareLoginHandler(GenericLoginHandler):
     #_OAUTH_AUTHORIZE_URL = '{0}/o/authorize/'.format(auth_server_full_url)
