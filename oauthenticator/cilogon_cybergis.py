@@ -24,22 +24,20 @@ from oauthenticator.cilogon_cybergis import CILogonOAuthenticator_CyberGIS
 c.JupyterHub.authenticator_class = CILogonOAuthenticator_New
 _cilogon_idp_list = [
     # the first idp is selected by default on CILogon UI
-    # value of idp and value of idp_name should match what CILogon returns
-    # short_name: is used as a readable label referenced in this code only
-    #             github should be "github"
-    # uanme_key: which key:value pair CILogon returns to be used as username in this code; 
-    #            uiuc should use "eppn", which returns uiuc email address XXXXX@illinois.edu, only XXXXX will be used in username
+    # 'idp' and value of 'idp_name' should match what CILogon returns; see https://www.cilogon.org/oidc
+    # uanme_key: which key:value pair in CILogon response to be used as username in this code;
+    #            uiuc should use "eppn", which returns uiuc email address XXXXX@illinois.edu
     #            github should use "oidc", which returns github user id (numbers), will be converted into github login username
-    #            None or Not Set: not recommended; will use original username_claim and/or additional_username_claims as the key
+    #            None or Not Set: not recommended; will use original username_claim and/or additional_username_claims as uanme_key
     # prefix/suffix: append to username (ex: <prefix_>username<_suffix>)
     #                None or Not Set -- treat as empty string ""
-    # cilogon_allowed_users: * -- any username is allow; 
-    #                        [XXX, XXX] - only listed username(s) allowed; 
+    # cilogon_allowed_users: * -- any username is allow;
+    #                        [XXX, XXX] - only listed username(s) allowed (XXX should include prefix and/or suffix);
     #                        None or Not Set - use original allowed_users settings
     
     {"idp": "urn:mace:incommon:uiuc.edu", "idp_name": "University of Illinois at Urbana-Champaign",
-     "short_name": "uillinios", "uname_key": "eppn", "prefix": "uillinois_", "cilogon_allowed_users": "*"},
-    {"idp": "http://github.com/login/oauth/authorize", "idp_name": "GitHub", "short_name": "github",
+      "uname_key": "eppn", "prefix": "uillinois_", "cilogon_allowed_users": "*"},
+    {"idp": "http://github.com/login/oauth/authorize", "idp_name": "GitHub",
      "uname_key": "oidc"},
 ]
 _cilogon_idp_dict = dict(zip([i["idp"] for i in _cilogon_idp_list], _cilogon_idp_list))
@@ -62,7 +60,7 @@ class CILogonOAuthenticator_CyberGIS(CILogonOAuthenticator):
 
     cilogon_idp_dict = Dict(dict(), config=True)
     cilogon_idp_used = None
-    cilogon_idp_used_info = None
+    cilogon_idp_used_info = dict()
 
     async def authenticate(self, handler, data=None):
 
@@ -107,6 +105,7 @@ class CILogonOAuthenticator_CyberGIS(CILogonOAuthenticator):
 
         # check if idp used is in provided idp list
         idp = resp_json.get("idp")
+        idp_name = resp_json.get("idp_name")
         self.cilogon_idp_used = idp
         if self.cilogon_idp_dict.get(idp) is None:
             self.log.error(
@@ -146,23 +145,22 @@ class CILogonOAuthenticator_CyberGIS(CILogonOAuthenticator):
                 raise web.HTTPError(500, "Failed to get username from CILogon")
 
         # Convert github user id (oidc) to login username
-        if self.cilogon_idp_used_info["short_name"].lower() == "github":
+        if idp_name.lower() == "github":
             req = HTTPRequest(
                 "https://api.github.com/user/{}".format(username)
             )
             resp = await http_client.fetch(req)
-            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
-            username = resp_json["login"]
+            resp_json_github = json.loads(resp.body.decode('utf8', 'replace'))
+            username = resp_json_github["login"]
+            # add converted github username to cilogon response, will be saved in auth_state below
+            resp_json["username"] = username
 
-        # remove @ from username
-        if "@" in username:
-            username = username.split('@')[0]
-
-        # append string to username
+        # append strings to username
         username = "{}{}{}".format(self.cilogon_idp_dict[idp].get("prefix", ''),
                                    username,
                                    self.cilogon_idp_dict[idp].get("suffix", ''))
-        ## not being used
+
+        ## commented out by drew
         # if self.allowed_idps:
         #     gotten_name, gotten_idp = username.split('@')
         #     if gotten_idp not in self.allowed_idps:
@@ -183,6 +181,7 @@ class CILogonOAuthenticator_CyberGIS(CILogonOAuthenticator):
         # keep access_token as well, in case anyone was relying on it
         auth_state['access_token'] = access_token
         auth_state['cilogon_user'] = resp_json
+        auth_state["idp_info"] = self.cilogon_idp_used_info
         return userdict
 
     # jupyterhub/jupyterhub/auth.py
