@@ -1,13 +1,13 @@
 """
-Allow to use UIUC channel and Github channel through CILogon
-single-user jupyter container name: UIUC -- uillinois_<netid>
-                                    github -- <username>
-allowed users:  UIUC --- all users
-                github ---  username list defined in DB
-
-
 Tested with oauthenticator 0.12.3 and 6f239bebecbb3fb0242de7f753ae1c93ed101340
             jupyterhub 1.3
+
+Allow to use UIUC channel and Github channel through CILogon
+See: dev_note.md to understand general how jupyterhub handles oauth login workflow
+
+single-user jupyter container name: UIUC -- uillinois_<email>
+                                    github -- <username>
+allowed users: check username in cilogon_allowed_users (see below) or go through original allowed_users check
 
 
 # The following should be in environment
@@ -21,7 +21,7 @@ OAUTH_CALLBACK_URL=https://XXXXXX/hub/oauth_callback
 
 from oauthenticator.cilogon_cybergis import CILogonOAuthenticator_CyberGIS
 
-c.JupyterHub.authenticator_class = CILogonOAuthenticator_New
+c.JupyterHub.authenticator_class = CILogonOAuthenticator_CyberGIS
 _cilogon_idp_list = [
     # the first idp is selected by default on CILogon UI
     # 'idp' and value of 'idp_name' should match what CILogon returns; see https://www.cilogon.org/oidc
@@ -31,9 +31,14 @@ _cilogon_idp_list = [
     #            None or Not Set: not recommended; will use original username_claim and/or additional_username_claims as uanme_key
     # prefix/suffix: append to username (ex: <prefix_>username<_suffix>)
     #                None or Not Set -- treat as empty string ""
-    # cilogon_allowed_users: * -- any username is allow;
+    # cilogon_allowed_users: * -- any username is allowed;
     #                        [XXX, XXX] - only listed username(s) allowed (XXX should include prefix and/or suffix);
-    #                        None or Not Set - use original allowed_users settings
+    #                        None or Not Set - use go through original allowed_users check
+
+    # the following settings:
+    # uiuc --  any user is allowed as {"cilogon_allowed_users": "*"}
+    # github -- depend on original allowed_users check: if c.Authenticator.allowed_users is set to a None-empty set/list, only usernames listed or exist in DB can login
+    #                                                    if c.Authenticator.allowed_users is not set or set to empty set/list, any user is allowed
     
     {"idp": "urn:mace:incommon:uiuc.edu", "idp_name": "University of Illinois at Urbana-Champaign",
       "uname_key": "eppn", "prefix": "uillinois_", "cilogon_allowed_users": "*"},
@@ -45,6 +50,14 @@ c.CILogonOAuthenticator_CyberGIS.cilogon_idp_dict = _cilogon_idp_dict
 # this will be added to authenticate_url as querystring to display selected idps in cilogon ui
 c.Authenticator.idp = ",".join([i["idp"] for i in _cilogon_idp_list])
 
+c.Authenticator.enable_auth_state = True
+if 'JUPYTERHUB_CRYPT_KEY' not in os.environ:
+    warnings.warn(
+        "Need JUPYTERHUB_CRYPT_KEY env for persistent auth_state.\n"
+        "    export JUPYTERHUB_CRYPT_KEY=$(openssl rand -hex 32)"
+    )
+    c.CryptKeeper.keys = [ os.urandom(32) ]
+
 """
 
 
@@ -54,7 +67,6 @@ from tornado.httputil import url_concat
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 from traitlets import Dict
 from oauthenticator.cilogon import CILogonOAuthenticator
-from jupyterhub.utils import maybe_future
 
 
 class CILogonOAuthenticator_CyberGIS(CILogonOAuthenticator):
